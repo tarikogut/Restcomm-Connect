@@ -74,6 +74,7 @@ import org.restcomm.connect.sms.api.SmsServiceResponse;
 import org.restcomm.connect.sms.api.SmsSessionAttribute;
 import org.restcomm.connect.sms.api.SmsSessionInfo;
 import org.restcomm.connect.sms.api.SmsSessionRequest;
+
 import org.restcomm.connect.sms.api.SmsSessionResponse;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -285,11 +286,16 @@ public abstract class SmsMessagesEndpoint extends SecuredEndpoint {
         final String recipient = data.getFirst("To");
         final String body = data.getFirst("Body");
         final SmsSessionRequest.Encoding encoding;
+        byte dcs = (byte)0;
         if (!data.containsKey("Encoding")) {
             encoding = SmsSessionRequest.Encoding.GSM;
         } else {
             encoding = SmsSessionRequest.Encoding.valueOf(data.getFirst("Encoding").replace('-', '_'));
         }
+        if(encoding.equals(SmsSessionRequest.Encoding.UCS_2)) {
+            dcs = (byte)8;
+        }
+        //check Charset exists
         ConcurrentHashMap<String, String> customRestOutgoingHeaderMap = new ConcurrentHashMap<String, String>();
         Iterator<String> iter = data.keySet().iterator();
         while (iter.hasNext()) {
@@ -307,7 +313,7 @@ public abstract class SmsMessagesEndpoint extends SecuredEndpoint {
                 final SmsServiceResponse<ActorRef> smsServiceResponse = (SmsServiceResponse<ActorRef>) object;
                 if (smsServiceResponse.succeeded()) {
                     // Create an SMS record for the text message.
-                    final SmsMessage record = sms(new Sid(accountSid), getApiVersion(data), sender, recipient, body,
+                    final SmsMessage record = sms(new Sid(accountSid), getApiVersion(data), sender, recipient, body, encoding.toString(),
                             SmsMessage.Status.SENDING, SmsMessage.Direction.OUTBOUND_API);
                     dao.addSmsMessage(record);
                     // Send the sms.
@@ -315,7 +321,8 @@ public abstract class SmsMessagesEndpoint extends SecuredEndpoint {
                     final ActorRef observer = observer();
                     session.tell(new Observe(observer), observer);
                     session.tell(new SmsSessionAttribute("record", record), null);
-                    final SmsSessionRequest request = new SmsSessionRequest(sender, recipient, body, encoding, customRestOutgoingHeaderMap);
+
+                    final SmsSessionRequest request = new SmsSessionRequest(sender, recipient, body, dcs, encoding, customRestOutgoingHeaderMap);
                     session.tell(request, null);
                     if (APPLICATION_JSON_TYPE.equals(responseType)) {
                         return ok(gson.toJson(record), APPLICATION_JSON).build();
@@ -338,7 +345,7 @@ public abstract class SmsMessagesEndpoint extends SecuredEndpoint {
     }
 
     private SmsMessage sms(final Sid accountSid, final String apiVersion, final String sender, final String recipient,
-            final String body, final SmsMessage.Status status, final SmsMessage.Direction direction) {
+            final String body, final String encoding, final SmsMessage.Status status, final SmsMessage.Direction direction) {
         final SmsMessage.Builder builder = SmsMessage.builder();
         final Sid sid = Sid.generate(Sid.Type.SMS_MESSAGE);
         builder.setSid(sid);
@@ -346,6 +353,7 @@ public abstract class SmsMessagesEndpoint extends SecuredEndpoint {
         builder.setSender(sender);
         builder.setRecipient(recipient);
         builder.setBody(body);
+        builder.setEncoding(encoding);
         builder.setStatus(status);
         builder.setDirection(direction);
         builder.setPrice(new BigDecimal(0.00));

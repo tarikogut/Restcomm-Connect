@@ -33,6 +33,7 @@ public final class SmsSessionRequest {
     private final String from;
     private final String to;
     private final String body;
+    private final byte dataCodingScheme;
     private final Encoding encoding;
     private final SipServletRequest origRequest;
     private final ConcurrentHashMap<String, String> customHeaders;
@@ -41,7 +42,11 @@ public final class SmsSessionRequest {
     public enum Encoding {
         UCS_2("UCS-2"),
         UTF_8("UTF-8"),
-        GSM("GSM");
+        GSM("GSM"),
+        GSM7("GSM7"),
+        GSM8("GSM8"),
+        ISO_8859_1("ISO-8859-1"),
+        ISO_8859_15("ISO-8859-15");
 
         private final String name;
 
@@ -63,49 +68,61 @@ public final class SmsSessionRequest {
     //(from, to, body, headers, tlvSet)
     //(from, to, body)
 
+    /**
+     * @deprecated Use {@link #SmsSessionRequest(String,String,String,byte,Encoding,SipServletRequest,TlvSet,ConcurrentHashMap<String, String>)} instead
+     */
     public SmsSessionRequest(final String from, final String to, final String body, final Encoding encoding, final SipServletRequest origRequest, TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
+        this(from, to, body, (byte)0, encoding, origRequest, tlvSet,
+                customHeaders);
+    }
+
+    public SmsSessionRequest(final String from, final String to, final String body, byte dcs, final Encoding encoding, final SipServletRequest origRequest, TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
         super();
         this.from = from;
         this.to = to;
         this.origRequest = origRequest;
         this.body = body;
         this.customHeaders = customHeaders;
+        this.dataCodingScheme = dcs;
         this.encoding = encoding;
         this.tlvSet = tlvSet;
-
     }
 
     //TODO need to check which is using the SmsSessionRequest and modify accordingly to include or not the custom headers
     public SmsSessionRequest(final String from, final String to, final String body, final Encoding encoding, final SipServletRequest origRequest, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, encoding, origRequest, null, customHeaders);
+        this(from, to, body, (byte)0, encoding, origRequest, null, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body, final Encoding encoding, final TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, encoding, null, tlvSet, customHeaders);
+        this(from, to, body, (byte)0, encoding, null, tlvSet, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body, final SipServletRequest origRequest, final TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, Encoding.GSM, origRequest, tlvSet, customHeaders);
+        this(from, to, body, (byte)0, Encoding.UTF_8, origRequest, tlvSet, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body, final SipServletRequest origRequest, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, Encoding.GSM, origRequest, null, customHeaders);
+        this(from, to, body, (byte)0, Encoding.UTF_8, origRequest, null, customHeaders);
     }
 
-    public SmsSessionRequest(final String from, final String to, final String body, final Encoding encoding, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, encoding, null, null, customHeaders);
+    public SmsSessionRequest(final String from, final String to, final String body, byte dcs,final Encoding encoding, final ConcurrentHashMap<String, String> customHeaders) {
+        this(from, to, body, dcs, encoding, null, null, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body, final TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, Encoding.GSM, null, null, customHeaders);
+        this(from, to, body, (byte)0, Encoding.UTF_8, null, null, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body, final ConcurrentHashMap<String, String> customHeaders) {
-        this(from, to, body, Encoding.GSM, null, null, customHeaders);
+        this(from, to, body, (byte)0, Encoding.UTF_8, null, null, customHeaders);
     }
 
     public SmsSessionRequest(final String from, final String to, final String body) {
-        this(from, to, body, Encoding.GSM, null, null, null);
+        this(from, to, body, (byte)0, Encoding.UTF_8, null, null, null);
+    }
+
+    public SmsSessionRequest(String smppFrom, String smppTo, String smppContent, byte smppDataCodingScheme, Encoding encoding, TlvSet tlvSet, final ConcurrentHashMap<String, String> customHeaders) {
+        this(smppFrom, smppTo, smppContent, smppDataCodingScheme, encoding, null, tlvSet, customHeaders);
     }
 
     public String from() {
@@ -122,6 +139,10 @@ public final class SmsSessionRequest {
 
     public Encoding encoding() {
         return encoding;
+    }
+
+    public byte getDataCodingScheme() {
+        return dataCodingScheme;
     }
 
     public TlvSet getTlvSet() {

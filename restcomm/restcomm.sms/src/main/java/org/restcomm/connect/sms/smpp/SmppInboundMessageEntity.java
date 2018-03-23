@@ -6,33 +6,23 @@ import com.cloudhopper.commons.charset.Charset;
 
 public class SmppInboundMessageEntity {
 
-
     private final String smppTo;
     private final String smppFrom;
-    private final String smppContent;
+    private final byte[] smppRawContent;
+    private final byte smppDataCodingScheme;
     private final Charset smppEncoding;
     private final TlvSet tlvSet;
     private final boolean isDeliveryReceipt;
 
-    public SmppInboundMessageEntity(String smppTo, String smppFrom, String smppContent, Charset smppEncoding){
-        this(smppTo, smppFrom, smppContent, smppEncoding, null, false);
+    public SmppInboundMessageEntity(String smppTo, String smppFrom, byte[] smppRawContent, byte smppDataCodingScheme, Charset smppEncoding){
+        this(smppTo, smppFrom, smppRawContent, smppDataCodingScheme, smppEncoding, null, false);
     }
 
-    public SmppInboundMessageEntity(String smppTo, String smppFrom, String smppContent, Charset smppEncoding,
-            boolean isDeliveryReceipt) {
-        this(smppTo, smppFrom, smppContent, smppEncoding, null, isDeliveryReceipt);
-    }
-
-    public SmppInboundMessageEntity(String smppTo, String smppFrom, String smppContent, Charset smppEncoding, TlvSet tlvSet){
-        this(smppTo, smppFrom, smppContent, smppEncoding, tlvSet, false);
-    }
-
-    public SmppInboundMessageEntity(String smppTo, String smppFrom, String smppContent, Charset smppEncoding, TlvSet tlvSet,
-            boolean isDeliveryReceipt) {
-
+    public SmppInboundMessageEntity(String smppTo, String smppFrom, byte[] smppRawContent, byte smppDataCodingScheme, Charset smppEncoding, TlvSet tlvSet, boolean isDeliveryReceipt) {
         this.smppTo = smppTo;
         this.smppFrom = smppFrom;
-        this.smppContent = smppContent;
+        this.smppRawContent = smppRawContent;
+        this.smppDataCodingScheme = smppDataCodingScheme;
         this.smppEncoding = smppEncoding;
         this.tlvSet = tlvSet;
         this.isDeliveryReceipt = isDeliveryReceipt;
@@ -49,9 +39,19 @@ public class SmppInboundMessageEntity {
     public final String getSmppFrom(){
         return smppFrom;
     }
-    public final String getSmppContent(){
-        return smppContent;
+
+    public String getSmppContent() {
+        return smppEncoding.decode(smppRawContent);
     }
+
+    public byte[] getSmppRawContent() {
+        return smppRawContent;
+    }
+
+    public byte getSmppDataCodingScheme() {
+        return smppDataCodingScheme;
+    }
+
     public final Charset getSmppEncoding(){
         return smppEncoding;
     }
@@ -68,8 +68,8 @@ public class SmppInboundMessageEntity {
             .append(smppFrom)
             .append(",To")
             .append(smppTo)
-            .append(",Content=")
-            .append(smppContent)
+            .append(",RawContent=")
+            .append(smppRawContent)
             .append(",Encoding=")
             .append(smppEncoding)
             .append("isDeliveryReceipt=")
@@ -77,5 +77,4 @@ public class SmppInboundMessageEntity {
 
         return builder.toString();
     }
-
 }

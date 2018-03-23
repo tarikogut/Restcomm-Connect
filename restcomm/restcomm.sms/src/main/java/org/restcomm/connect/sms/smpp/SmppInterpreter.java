@@ -402,6 +402,7 @@ public class SmppInterpreter extends RestcommUntypedActor {
         parameters.add(new BasicNameValuePair("To", to));
         final String body = initialSessionRequest.body();
         parameters.add(new BasicNameValuePair("Body", body));
+        parameters.add(new BasicNameValuePair("Encoding", initialSessionRequest.encoding().name()));
 
         //Issue https://telestax.atlassian.net/browse/RESTCOMM-517. If Request contains custom headers pass them to the HTTP server.
         if(customRequestHeaderMap != null && !customRequestHeaderMap.isEmpty()){
@@ -693,6 +694,7 @@ public class SmppInterpreter extends RestcommUntypedActor {
             final ActorRef session = response.get();
             final NotificationsDao notifications = storage.getNotificationsDao();
             SmsSessionRequest.Encoding encoding = initialSessionRequest.encoding();
+            byte dcs = initialSessionRequest.getDataCodingScheme();
             // Parse "from".
             String from = initialSessionRequest.to();
             Attribute attribute = verb.attribute("from");
@@ -783,7 +785,7 @@ public class SmppInterpreter extends RestcommUntypedActor {
                 // Store the sms record in the sms session.
                 session.tell(new  SmsSessionAttribute("record", record), source);
                 // Send the SMS.
-                final SmsSessionRequest sms = new SmsSessionRequest(from, to, body, encoding, customHttpHeaderMap);
+                final SmsSessionRequest sms = new SmsSessionRequest(from, to, body, dcs, encoding, customHttpHeaderMap);
                 session.tell(sms, source);
                 sessions.put(sid, session);
             }

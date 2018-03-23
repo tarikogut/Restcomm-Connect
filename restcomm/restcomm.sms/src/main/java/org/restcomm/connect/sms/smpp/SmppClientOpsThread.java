@@ -351,19 +351,22 @@ public class SmppClientOpsThread implements Runnable {
             } else {
 
                 DeliverSm deliverSm = (DeliverSm) pduRequest;
+
                 try {
-                    String decodedPduMessage = CharsetUtil.CHARSET_MODIFIED_UTF8.decode(deliverSm.getShortMessage());
+                    byte dcs = deliverSm.getDataCoding();
                     String destSmppAddress = deliverSm.getDestAddress().getAddress();
                     String sourceSmppAddress = deliverSm.getSourceAddress().getAddress();
-                    Charset charset;
-                    if (DataCoding.DATA_CODING_UCS2 == deliverSm.getDataCoding()) {
-                        charset = CharsetUtil.CHARSET_UCS_2;
-                    } else {
-                        charset = CharsetUtil.CHARSET_GSM;
+
+                    //this default esme encoding only applies to DCS==0
+                    Charset encoding = esme.getCharacterEncoding();
+                    if(dcs == DataCoding.DATA_CODING_UCS2) {
+                        //FIXME: there might be different charset mappings for when DCS==8
+                        encoding = CharsetUtil.CHARSET_UCS_2;
                     }
+
                     //send received SMPP PDU message to restcomm
                     try {
-                        sendSmppMessageToRestcomm(decodedPduMessage, destSmppAddress, sourceSmppAddress, charset);
+                        sendSmppMessageToRestcomm(destSmppAddress, sourceSmppAddress, deliverSm.getShortMessage(), dcs, encoding);
                     } catch (IOException | ServletException e) {
                         logger.error("Exception while trying to dispatch incoming SMPP message to Restcomm: " + e);
                     }
@@ -421,12 +424,8 @@ public class SmppClientOpsThread implements Runnable {
         return getSmppSession;
     }
 
-    public void sendSmppMessageToRestcomm(String smppMessage, String smppTo, String smppFrom, Charset charset) throws IOException, ServletException {
-        SmppSession smppSession = SmppClientOpsThread.getSmppSession();
-        String to = smppTo;
-        String from = smppFrom;
-        String inboundMessage = smppMessage;
-        SmppInboundMessageEntity smppInboundMessage = new SmppInboundMessageEntity(to, from, inboundMessage, charset);
+    public void sendSmppMessageToRestcomm(String smppTo, String smppFrom, byte[] smppRawContent, byte dcs, Charset charset) throws IOException, ServletException {
+        SmppInboundMessageEntity smppInboundMessage = new SmppInboundMessageEntity(smppTo, smppFrom, smppRawContent, dcs, charset);
         smppMessageHandler.tell(smppInboundMessage, null);
     }
 }

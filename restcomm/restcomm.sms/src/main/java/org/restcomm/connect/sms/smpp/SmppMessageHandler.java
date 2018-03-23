@@ -356,13 +356,8 @@ public class SmppMessageHandler extends RestcommUntypedActor {
         SubmitSm submit0 = new SubmitSm();
         submit0.setSourceAddress(new Address((byte) smppTonNpiValue, (byte) smppTonNpiValue, request.getSmppFrom()));
         submit0.setDestAddress(new Address((byte) smppTonNpiValue, (byte) smppTonNpiValue, request.getSmppTo()));
-        if (CharsetUtil.CHARSET_UCS_2 == request.getSmppEncoding()) {
-            submit0.setDataCoding(DataCoding.DATA_CODING_UCS2);
-            textBytes = CharsetUtil.encode(request.getSmppContent(), CharsetUtil.CHARSET_UCS_2);
-        } else {
-            submit0.setDataCoding(DataCoding.DATA_CODING_GSM7);
-            textBytes = CharsetUtil.encode(request.getSmppContent(), request.getSmppEncoding());
-        }
+        submit0.setDataCoding(request.getDataCodingScheme());
+        textBytes = CharsetUtil.encode(request.getSmppContent(), request.getSmppEncoding());
 
         //TODO reverted from https://telestax.atlassian.net/browse/RESTCOMM-1595 as it caused SMS loop at SMSC
         //TODO the delivery receipt should be introduced only together with the remaining/pending DLR implementation

@@ -97,6 +97,8 @@ public final class SmsSession extends RestcommUntypedActor {
     // Map for custom headers from inbound SIP MESSAGE
     private ConcurrentHashMap<String, String> customRequestHeaderMap = new ConcurrentHashMap<String, String>();
     private TlvSet tlvSet;
+    private byte dataCodingScheme;
+    private Charset encoding;
 
     private final DaoManager storage;
 
@@ -183,16 +185,27 @@ public final class SmsSession extends RestcommUntypedActor {
             }
         } else if (message instanceof SmppInboundMessageEntity) {
             final SmppInboundMessageEntity request = (SmppInboundMessageEntity) message;
+            SmsSessionRequest.Encoding encoding = null;
 
-            final SmsSessionRequest.Encoding encoding;
+            //FIXME: ugly!
             if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_UCS_2)) {
                 encoding = SmsSessionRequest.Encoding.UCS_2;
-            } else {
+            } else if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_GSM)) {
                 encoding = SmsSessionRequest.Encoding.GSM;
+            } else if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_GSM7)) {
+                encoding = SmsSessionRequest.Encoding.GSM7;
+            } else if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_GSM8)) {
+                encoding = SmsSessionRequest.Encoding.GSM8;
+            } else if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_ISO_8859_1)) {
+                encoding = SmsSessionRequest.Encoding.ISO_8859_1;
+            } else if(request.getSmppEncoding().equals(CharsetUtil.CHARSET_ISO_8859_15)) {
+                encoding = SmsSessionRequest.Encoding.ISO_8859_15;
+            } else {
+                encoding = SmsSessionRequest.Encoding.UTF_8;
             }
             // Store the last sms event.
-
-            last = new SmsSessionRequest (request.getSmppFrom(), request.getSmppTo(), request.getSmppContent(), encoding, request.getTlvSet(), null);
+            this.dataCodingScheme = request.getSmppDataCodingScheme();
+            last = new SmsSessionRequest (request.getSmppFrom(), request.getSmppTo(), request.getSmppContent(), request.getSmppDataCodingScheme(), encoding, request.getTlvSet(), null);
             if (initial == null) {
                 initial = last;
             }
@@ -287,6 +300,7 @@ public final class SmsSession extends RestcommUntypedActor {
 
     private void outbound(final Object message) {
         last = (SmsSessionRequest) message;
+
         if (initial == null) {
             initial = last;
         }
@@ -308,6 +322,9 @@ public final class SmsSession extends RestcommUntypedActor {
             charset = CharsetUtil.CHARSET_GSM;
         }
 
+        //FIXME: need this dcs from a config somewhere
+        byte dcs = (byte)0;
+        dcs = last.getDataCodingScheme();
         monitoringService.tell(new TextMessage(last.from(), last.to(), TextMessage.SmsState.OUTBOUND), self());
         final ClientsDao clients = storage.getClientsDao();
         String to;
@@ -327,7 +344,7 @@ public final class SmsSession extends RestcommUntypedActor {
                 if(logger.isInfoEnabled()) {
                     logger.info("Destination is not a local registered client, therefore, sending through SMPP to:  " + last.to() );
                 }
-                if (sendUsingSmpp(last.from(), last.to(), last.body(), tlvSet, charset))
+                if (sendUsingSmpp(last.from(), last.to(), last.body(), tlvSet, dcs, charset))
                     return;
             }
         } else {
@@ -341,17 +358,14 @@ public final class SmsSession extends RestcommUntypedActor {
         }, system.dispatcher());
     }
 
-    private boolean sendUsingSmpp(String from, String to, String body, Charset encoding) {
-        return sendUsingSmpp(from, to, body, null, encoding);
-    }
-    private boolean sendUsingSmpp(String from, String to, String body, TlvSet tlvSet, Charset encoding) {
+    private boolean sendUsingSmpp(String from, String to, String body, TlvSet tlvSet, byte dcs, Charset encoding) {
         if ((SmppClientOpsThread.getSmppSession() != null && SmppClientOpsThread.getSmppSession().isBound()) && smppMessageHandler != null) {
             if(logger.isInfoEnabled()) {
                 logger.info("SMPP session is available and connected, outbound message will be forwarded to :  " + to );
                 logger.info("Encoding:  " + encoding );
             }
             try {
-                final SmppOutboundMessageEntity sms = new SmppOutboundMessageEntity(to, from, body, encoding, tlvSet);
+                final SmppOutboundMessageEntity sms = new SmppOutboundMessageEntity(to, from, body, dcs, encoding, tlvSet);
                 smppMessageHandler.tell(sms, null);
             }catch (final Exception exception) {
                 // Log the exception.
