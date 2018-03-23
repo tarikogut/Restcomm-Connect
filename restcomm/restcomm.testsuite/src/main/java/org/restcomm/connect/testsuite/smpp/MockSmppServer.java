@@ -87,12 +87,12 @@ public class MockSmppServer {
         //http://stackoverflow.com/a/25885741
         try {
             byte[] textBytes;
-            if (CharsetUtil.CHARSET_UCS_2 == charset) {
-                textBytes = smppMessage.getBytes();
-            } else {
-                textBytes = CharsetUtil.encode(smppMessage, charset);
-            }
-
+//            if (CharsetUtil.CHARSET_UCS_2 == charset) {
+//                textBytes = CharsetUtil.encode(smppMessage, charset);
+//            } else {
+//                textBytes = CharsetUtil.encode(smppMessage, charset);
+//            }
+            textBytes = CharsetUtil.encode(smppMessage, charset);
             DeliverSm deliver = new DeliverSm();
 
             deliver.setSourceAddress(new Address((byte) 0x03, (byte) 0x00, smppFrom));
@@ -211,7 +211,9 @@ public class MockSmppServer {
 
             // mimic how long processing could take on a slower smsc
             //processing received SMPP message from Restcomm
-            String decodedPduMessage = null;
+            //String decodedPduMessage = null;
+            byte []pduMessage = null;
+            byte dcs = 0;
             String destSmppAddress = null;
             String sourceSmppAddress = null;
             boolean isDeliveryReceipt = false;
@@ -225,7 +227,9 @@ public class MockSmppServer {
 
                 try {
                     SubmitSm deliverSm = (SubmitSm) pduRequest;
-                    decodedPduMessage = CharsetUtil.CHARSET_MODIFIED_UTF8.decode(deliverSm.getShortMessage());
+                    pduMessage = deliverSm.getShortMessage();
+                    dcs = deliverSm.getDataCoding();
+                    //decodedPduMessage = CharsetUtil.CHARSET_MODIFIED_UTF8.decode(deliverSm.getShortMessage());
                     destSmppAddress = deliverSm.getDestAddress().getAddress();
                     sourceSmppAddress = deliverSm.getSourceAddress().getAddress();
                     if (deliverSm.getRegisteredDelivery() == (byte) 0x01) {
@@ -237,7 +241,7 @@ public class MockSmppServer {
                     logger.info("********DeliverSm Exception******* " + e);
                 }
 
-                smppInboundMessageEntity = new SmppInboundMessageEntity(destSmppAddress, sourceSmppAddress, decodedPduMessage, CharsetUtil.CHARSET_GSM, isDeliveryReceipt);
+                smppInboundMessageEntity = new SmppInboundMessageEntity(destSmppAddress, sourceSmppAddress, pduMessage, dcs, CharsetUtil.CHARSET_UTF_8, null, isDeliveryReceipt);
                 messageReceived = true;
             }
             return pduRequest.createResponse();

@@ -297,6 +297,7 @@
 					If no response received for 3 consecutive requests, connection will be killed
 					and attempted to connect again -->
 				<enquirelinkdelay>30000</enquirelinkdelay>
+				<!-- characterEncoding>UTF-8</characterEncoding-->
 			</connection>
 		</connections>
 	</smpp>
