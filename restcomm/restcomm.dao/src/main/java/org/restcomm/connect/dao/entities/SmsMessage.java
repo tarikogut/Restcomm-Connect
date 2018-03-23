@@ -44,6 +44,7 @@ public final class SmsMessage implements StreamEvent {
     private final String sender;
     private final String recipient;
     private final String body;
+    private final String encoding;
     private final Status status;
     private final Direction direction;
     private final BigDecimal price;
@@ -53,7 +54,7 @@ public final class SmsMessage implements StreamEvent {
     private final URI uri;
 
     public SmsMessage(final Sid sid, final DateTime dateCreated, final DateTime dateUpdated, final DateTime dateSent,
-            final Sid accountSid, final String sender, final String recipient, final String body, final Status status,
+            final Sid accountSid, final String sender, final String recipient, final String body, final String encoding, final Status status,
             final Direction direction, final BigDecimal price, final Currency priceUnit, final String apiVersion, final URI uri) {
         super();
         this.sid = sid;
@@ -64,6 +65,7 @@ public final class SmsMessage implements StreamEvent {
         this.sender = sender;
         this.recipient = recipient;
         this.body = body;
+        this.encoding = encoding;
         this.status = status;
         this.direction = direction;
         this.price = price;
@@ -108,6 +110,10 @@ public final class SmsMessage implements StreamEvent {
         return body;
     }
 
+    public String getEncoding() {
+        return encoding;
+    }
+
     public Status getStatus() {
         return status;
     }
@@ -133,12 +139,12 @@ public final class SmsMessage implements StreamEvent {
     }
 
     public SmsMessage setDateSent(final DateTime dateSent) {
-        return new SmsMessage(sid, dateCreated, DateTime.now(), dateSent, accountSid, sender, recipient, body, status,
+        return new SmsMessage(sid, dateCreated, DateTime.now(), dateSent, accountSid, sender, recipient, body, encoding, status,
                 direction, price, priceUnit, apiVersion, uri);
     }
 
     public SmsMessage setStatus(final Status status) {
-        return new SmsMessage(sid, dateCreated, DateTime.now(), dateSent, accountSid, sender, recipient, body, status,
+        return new SmsMessage(sid, dateCreated, DateTime.now(), dateSent, accountSid, sender, recipient, body, encoding, status,
                 direction, price, priceUnit, apiVersion, uri);
     }
 
@@ -150,6 +156,7 @@ public final class SmsMessage implements StreamEvent {
         private String sender;
         private String recipient;
         private String body;
+        private String encoding;
         private Status status;
         private Direction direction;
         private BigDecimal price;
@@ -170,7 +177,7 @@ public final class SmsMessage implements StreamEvent {
             if (dateUpdated == null) {
                 dateUpdated = dateCreated;
             }
-            return new SmsMessage(sid, dateCreated, dateUpdated, dateSent, accountSid, sender, recipient, body, status, direction, price,
+            return new SmsMessage(sid, dateCreated, dateUpdated, dateSent, accountSid, sender, recipient, body, encoding, status, direction, price,
                     priceUnit, apiVersion, uri);
         }
 
@@ -196,6 +203,10 @@ public final class SmsMessage implements StreamEvent {
 
         public void setBody(final String body) {
             this.body = body;
+        }
+
+        public void setEncoding(final String encoding) {
+            this.encoding = encoding;
         }
 
         public void setStatus(final Status status) {

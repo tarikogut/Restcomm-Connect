@@ -214,13 +214,14 @@ public final class MybatisSmsMessagesDao implements SmsMessagesDao {
         final String sender = readString(map.get("sender"));
         final String recipient = readString(map.get("recipient"));
         final String body = readString(map.get("body"));
+        final String encoding = readString(map.get("encoding"));
         final SmsMessage.Status status = SmsMessage.Status.getStatusValue(readString(map.get("status")));
         final SmsMessage.Direction direction = SmsMessage.Direction.getDirectionValue(readString(map.get("direction")));
         final BigDecimal price = readBigDecimal(map.get("price"));
         final Currency priceUnit = readCurrency(map.get("price_unit"));
         final String apiVersion = readString(map.get("api_version"));
         final URI uri = readUri(map.get("uri"));
-        return new SmsMessage(sid, dateCreated, dateUpdated, dateSent, accountSid, sender, recipient, body, status, direction,
+        return new SmsMessage(sid, dateCreated, dateUpdated, dateSent, accountSid, sender, recipient, body, encoding, status, direction,
                 price, priceUnit, apiVersion, uri);
     }
 }
